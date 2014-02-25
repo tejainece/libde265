@@ -127,15 +127,27 @@ void markPredictionBlockBoundary(decoder_context* ctx, int x0,int y0,
 }
 
 
-char derive_edgeFlags(decoder_context* ctx)
+char derive_edgeFlagsInCTB(decoder_context* ctx,int ctbX,int ctbY)
 {
-  const int minCbSize = ctx->current_sps->MinCbSizeY;
+  const seq_parameter_set* sps = ctx->current_sps;
+
+  int nCbsInCtb  = (1<<sps->Log2CtbSizeY) / (1<<sps->Log2MinCbSizeY);
+  int nCbsInCtb2 = 1<<(sps->Log2CtbSizeY-sps->Log2MinCbSizeY);
+  assert(nCbsInCtb2 == nCbsInCtb);
+
+  const int minCbSize = sps->MinCbSizeY;
   char deblocking_enabled=0; // whether deblocking is enabled in some part of the image
 
-  for (int cb_y=0;cb_y<ctx->current_sps->PicHeightInMinCbsY;cb_y++)
-    for (int cb_x=0;cb_x<ctx->current_sps->PicWidthInMinCbsY;cb_x++)
+  for (int cb_y=ctbY*nCbsInCtb;
+       cb_y<(ctbY+1)*nCbsInCtb &&
+       cb_y<sps->PicHeightInMinCbsY;
+       cb_y++)
+    for (int cb_x=ctbX*nCbsInCtb;
+         cb_x<(ctbX+1)*nCbsInCtb &&
+         cb_x<sps->PicWidthInMinCbsY;
+         cb_x++)
       {
-        int log2CbSize = get_log2CbSize_cbUnits(ctx->img,ctx->current_sps,cb_x,cb_y);
+        int log2CbSize = get_log2CbSize_cbUnits(ctx->img,sps,cb_x,cb_y);
         if (log2CbSize==0) {
           continue;
         }
@@ -173,6 +185,18 @@ char derive_edgeFlags(decoder_context* ctx)
   return deblocking_enabled;
 }
 
+
+char derive_edgeFlags(decoder_context* ctx)
+{
+  char enabled=0;
+
+  for (int ctbY=0;ctbY<ctx->current_sps->PicHeightInCtbsY;ctbY++)
+    for (int ctbX=0;ctbX<ctx->current_sps->PicWidthInCtbsY;ctbX++) {
+      enabled |= derive_edgeFlagsInCTB(ctx,ctbX,ctbY);
+    }
+
+  return enabled;
+}
 
 
 // 8.7.2.3 (both, EDGE_VER and EDGE_HOR)
