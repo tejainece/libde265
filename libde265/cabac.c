@@ -25,7 +25,14 @@
 #include <stdio.h>
 #include <assert.h>
 
+/*
+ * CABAC decoder implementation
+ */
 
+/*
+ * Table 9-40
+ * This lookup table converts pStateIdx and qRangeIdx to LPS range
+ */
 static const uint8_t LPS_table[64][4] =
   {
     { 128, 176, 208, 240},
@@ -106,6 +113,11 @@ static const uint8_t renorm_table[32] =
     1,  1,  1,  1
   };
 
+/*
+ * Table 9-41
+ * Lookup table used by CABAC decoder to update pStateIdx after decoding 
+ * a MPS bin
+ */
 static const uint8_t next_state_MPS[64] =
   {
     1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
@@ -114,6 +126,11 @@ static const uint8_t next_state_MPS[64] =
     49,50,51,52,53,54,55,56,57,58,59,60,61,62,62,63
   };
 
+/*
+ * Table 9-41
+ * Lookup table used by CABAC decoder to update pStateIdx after decoding 
+ * a LPS bin
+ */
 static const uint8_t next_state_LPS[64] =
   {
     0,0,1,2,2,4,4,5,6,7,8,9,9,11,11,12,
