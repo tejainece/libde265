@@ -2,8 +2,16 @@
 #include <decctx.h>
 
 char Dbg_cabac_se_name[DBG_CSECI_LENGTH][30] = {
-  "split_cu_flag", "cu_skip_flag",
-
+  "split_cu_flag", "cu_transquant_bypass_flag", "cu_skip_flag",
+  "pred_mode_flag", "part_mode ", "pcm_flag",
+  "prev_intra_luma_pred_flag", "mpm_idx",
+  "rem_intra_luma_pred_mode", "intra_chroma_pred_mode", "rqt_root_cbf",
+  "merge_flag", "merge_idx",
+  "inter_pred_idc", 
+  "ref_idx_l0", "ref_idx_l1",
+  "mvp_l0_flag", "mvp_l1_flag",
+  "split_transform_flag",
+  "cbf_cb", "cbf_cr", "cbf_luma",
   "abs_mvd_greater0_flag", "abs_mvd_greater1_flag", 
   "abs_mvd_minus2", "mvd_sign_flag",
   "cu_qp_delta_abs", "cu_qp_delta_sign_flag",

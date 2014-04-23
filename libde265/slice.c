@@ -2948,6 +2948,9 @@ void read_transform_tree(decoder_context* ctx,
       !(IntraSplitFlag && trafoDepth==0))
     {
       split_transform_flag = decode_split_transform_flag(tctx, log2TrafoSize);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_SPLIT_TRANSFORM_FLAG);
     }
   else
     {
@@ -2970,11 +2973,17 @@ void read_transform_tree(decoder_context* ctx,
     // we do not have to test for trafoDepth==0, because parent_cbf_cb is 1 at depth 0
     if (/*trafoDepth==0 ||*/ parent_cbf_cb) {
       cbf_cb = decode_cbf_chroma(tctx,trafoDepth);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_CBF_CB);
     }
 
     // we do not have to test for trafoDepth==0, because parent_cbf_cb is 1 at depth 0
     if (/*trafoDepth==0 ||*/ parent_cbf_cr) {
       cbf_cr = decode_cbf_chroma(tctx,trafoDepth);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_CBF_CR);
     }
   }
 
@@ -3017,6 +3026,9 @@ void read_transform_tree(decoder_context* ctx,
 
     if (PredMode==MODE_INTRA || trafoDepth!=0 || cbf_cb || cbf_cr) {
       cbf_luma = decode_cbf_luma(tctx,trafoDepth);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_CBF_LUMA);
     }
 
     logtrace(LogSlice,"call read_transform_unit %d/%d\n",x0,y0);
@@ -3180,6 +3192,9 @@ void read_prediction_unit_SKIP(decoder_context* ctx,
   int merge_idx;
   if (shdr->MaxNumMergeCand>1) {
     merge_idx = decode_merge_idx(tctx);
+
+    //cabac analyze and debug
+    incCabacDbgSeCnt(ctx, DBG_CSECI_MERGE_IDX);
   }
   else {
     merge_idx = 0;
@@ -3206,6 +3221,10 @@ void read_prediction_unit(decoder_context* ctx,
   slice_segment_header* shdr = tctx->shdr;
 
   int merge_flag = decode_merge_flag(tctx);
+
+  //cabac analyze and debug
+  incCabacDbgSeCnt(ctx, DBG_CSECI_MERGE_FLAG);
+
   tctx->merge_flag = merge_flag;
 
   if (merge_flag) {
@@ -3213,6 +3232,9 @@ void read_prediction_unit(decoder_context* ctx,
 
     if (shdr->MaxNumMergeCand>1) {
       merge_idx = decode_merge_idx(tctx);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_MERGE_IDX);
     }
     else {
       merge_idx = 0;
@@ -3227,6 +3249,9 @@ void read_prediction_unit(decoder_context* ctx,
 
     if (shdr->slice_type == SLICE_TYPE_B) {
       inter_pred_idc = decode_inter_pred_idc(tctx,x0,y0,nPbW,nPbH,ctDepth);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_INTER_PRED_IDC);
     }
     else {
       inter_pred_idc = PRED_L0;
@@ -3237,12 +3262,19 @@ void read_prediction_unit(decoder_context* ctx,
     if (inter_pred_idc != PRED_L1) {
       int ref_idx_l0 = decode_ref_idx_lX(tctx, shdr->num_ref_idx_l0_active);
 
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_REF_IDX_L0);
+
       // NOTE: case for only one reference frame is handles in decode_ref_idx_lX()
       tctx->refIdx[0] = ref_idx_l0;
 
       read_mvd_coding(tctx,x0,y0, 0);
 
       int mvp_l0_flag = decode_mvp_lx_flag(tctx); // l0
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_MVP_L0_FLAG);
+
       tctx->mvp_lX_flag[0] = mvp_l0_flag;
 
       logtrace(LogSlice,"prediction unit %d,%d, L0, refIdx=%d mvp_l0_flag:%d\n",
@@ -3251,6 +3283,9 @@ void read_prediction_unit(decoder_context* ctx,
 
     if (inter_pred_idc != PRED_L0) {
       int ref_idx_l1 = decode_ref_idx_lX(tctx, shdr->num_ref_idx_l1_active);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_REF_IDX_L1);
 
       // NOTE: case for only one reference frame is handles in decode_ref_idx_lX()
       tctx->refIdx[1] = ref_idx_l1;
@@ -3265,6 +3300,10 @@ void read_prediction_unit(decoder_context* ctx,
       }
 
       int mvp_l1_flag = decode_mvp_lx_flag(tctx); // l1
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_MVP_L1_FLAG);
+
       tctx->mvp_lX_flag[1] = mvp_l1_flag;
 
       logtrace(LogSlice,"prediction unit %d,%d, L1, refIdx=%d mvp_l1_flag:%d\n",
@@ -3366,6 +3405,9 @@ void read_coding_unit(decoder_context* ctx,
     {
       int transquant_bypass = decode_transquant_bypass_flag(tctx);
 
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_CU_TRANSQUANT_BYPASS_FLAG);
+
       tctx->cu_transquant_bypass_flag = transquant_bypass;
 
       if (transquant_bypass) {
@@ -3404,6 +3446,10 @@ void read_coding_unit(decoder_context* ctx,
   else /* not skipped */ {
     if (shdr->slice_type != SLICE_TYPE_I) {
       int pred_mode_flag = decode_pred_mode_flag(tctx);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_PRED_MODE_FLAG);
+
       cuPredMode = pred_mode_flag ? MODE_INTRA : MODE_INTER;
     }
     else {
@@ -3420,6 +3466,9 @@ void read_coding_unit(decoder_context* ctx,
     if (cuPredMode != MODE_INTRA ||
         log2CbSize == sps->Log2MinCbSizeY) {
       PartMode = decode_part_mode(tctx, cuPredMode, log2CbSize);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_PART_MODE);
 
       if (PartMode==PART_NxN && cuPredMode==MODE_INTRA) {
         IntraSplitFlag=1;
@@ -3440,6 +3489,9 @@ void read_coding_unit(decoder_context* ctx,
           log2CbSize >= sps->Log2MinIpcmCbSizeY &&
           log2CbSize <= sps->Log2MaxIpcmCbSizeY) {
         pcm_flag = decode_CABAC_term_bit(&tctx->cabac_decoder);
+
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_PCM_FLAG);
       }
 
       if (pcm_flag) {
@@ -3462,6 +3514,9 @@ void read_coding_unit(decoder_context* ctx,
           for (int i=0;i<nCbS;i+=pbOffset)
             {
               prev_intra_luma_pred_flag[idx++] = decode_prev_intra_luma_pred_flag(tctx);
+
+              //cabac analyze and debug
+              incCabacDbgSeCnt(ctx, DBG_CSECI_PREV_INTRA_LUMA_PRED_FLAG);
             }
 
         int mpm_idx[4], rem_intra_luma_pred_mode[4];
@@ -3472,9 +3527,15 @@ void read_coding_unit(decoder_context* ctx,
             {
               if (prev_intra_luma_pred_flag[idx]) {
                 mpm_idx[idx] = decode_mpm_idx(tctx);
+
+                //cabac analyze and debug
+                incCabacDbgSeCnt(ctx, DBG_CSECI_MPM_IDX);
               }
               else {
                 rem_intra_luma_pred_mode[idx] = decode_rem_intra_luma_pred_mode(tctx);
+
+                //cabac analyze and debug
+                incCabacDbgSeCnt(ctx, DBG_CSECI_REM_INTRA_LUMA_PRED_MODE);
               }
 
 
@@ -3600,6 +3661,9 @@ void read_coding_unit(decoder_context* ctx,
 
         int intra_chroma_pred_mode = decode_intra_chroma_pred_mode(tctx);
 
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_INTRA_CHROMA_PRED_MODE);
+
         int IntraPredMode = ctx->img->intraPredMode[(x0>>sps->Log2MinPUSize) +
                                                     (y0>>sps->Log2MinPUSize) * sps->PicWidthInMinPUs];
         logtrace(LogSlice,"IntraPredMode: %d\n",IntraPredMode);
@@ -3683,6 +3747,9 @@ void read_coding_unit(decoder_context* ctx,
           !(PartMode == PART_2Nx2N && merge_flag)) {
 
         rqt_root_cbf = !!decode_rqt_root_cbf(tctx);
+
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_RQT_ROOT_CBF);
       }
       else {
         rqt_root_cbf = true;
