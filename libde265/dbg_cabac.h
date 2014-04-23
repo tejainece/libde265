@@ -1,0 +1,48 @@
+#ifndef DE265_DBG_CABAC_H
+#define DE265_DBG_CABAC_H
+
+struct decoder_context;
+
+enum Dbg_cabac_se_idx {
+  DBG_CSECI_SPLIT_CU_FLAG,
+  DBG_CSECI_CU_SKIP_FLAG,
+
+  DBG_CSECI_ABS_MVD_GREATER0_FLAG,
+  DBG_CSECI_ABS_MVD_GREATER1_FLAG,
+  DBG_CSECI_ABS_MVD_MINUS2,
+  DBG_CSECI_MVD_SIGN_FLAG,
+  DBG_CSECI_CU_QP_DELTA_ABS,
+  DBG_CSECI_CU_QP_DELTA_SIGN_FLAG,
+  DBG_CSECI_TRANSFORM_SKIP_FLAG,
+  DBG_CSECI_LAST_SIG_COEFF_X_PREFIX,
+  DBG_CSECI_LAST_SIG_COEFF_Y_PREFIX,
+  DBG_CSECI_LAST_SIG_COEFF_X_SUFFIX,
+  DBG_CSECI_LAST_SIG_COEFF_Y_SUFFIX,
+  DBG_CSECI_CODED_SUB_BLOCK_FLAG,
+  DBG_CSECI_SIG_COEFF_FLAG,
+  DBG_CSECI_COEFF_ABS_LEVEL_GREATER1_FLAG,
+  DBG_CSECI_COEFF_ABS_LEVEL_GREATER2_FLAG,
+  DBG_CSECI_COEFF_ABS_LEVEL_REMAINING,
+  DBG_CSECI_COEFF_SIGN_FLAG,
+  DBG_CSECI_LENGTH
+};
+
+extern char Dbg_cabac_se_name[DBG_CSECI_LENGTH][30];
+
+enum Dbg_cabac_dectyp_idx {
+  DBG_CDT_DECODE_DECISION,
+  DBG_CDT_DECODE_BYPASS,
+  DBG_CDT_DECODE_TERMINATE,
+  DBG_CDT_LENGTH
+};
+
+typedef struct Debug_cabac {
+  uint32_t se_cnt[DBG_CSECI_LENGTH];
+  uint32_t dectyp_cnt[DBG_CDT_LENGTH];
+} Debug_cabac;
+
+LIBDE265_API void printCabacDebugInfo(struct decoder_context*);
+LIBDE265_API void incCabacDbgSeCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
+LIBDE265_API void incCabacDbgDectypCnt(struct decoder_context* ctx, enum Dbg_cabac_dectyp_idx);
+
+#endif

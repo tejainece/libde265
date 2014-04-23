@@ -179,7 +179,9 @@ LIBDE265_API de265_error de265_free()
   return DE265_OK;
 }
 
-
+/**
+ * creates a new decoder context
+ */
 LIBDE265_API de265_decoder_context* de265_new_decoder()
 {
   de265_error init_err = de265_init();

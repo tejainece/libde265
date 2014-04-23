@@ -21,3 +21,15 @@ de265-config.h
 *.ncb
 *.suo
 *.vcproj*
+
+*.m4
+autom4te.cache
+config.guess
+config.sub
+depcomp
+install-sh
+libde265.pc
+libde265/de265-version.h
+libtool
+ltmain.sh
+missing

@@ -57,7 +57,6 @@ extern "C" {
 #include "libde265/threads.h"
 }
 
-
 #ifndef _MSC_VER
 extern "C" {
 void showMotionProfile();
@@ -480,6 +479,8 @@ int main(int argc, char** argv)
   if (write_bytestream) {
     fclose(bytestream_fh);
   }
+
+  printCabacDebugInfo((decoder_context*)ctx);
 
   de265_free_decoder(ctx);
 

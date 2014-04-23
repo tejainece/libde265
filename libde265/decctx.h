@@ -21,6 +21,8 @@
 #ifndef DE265_DECCTX_H
 #define DE265_DECCTX_H
 
+#include <stdint.h>
+
 #include "libde265/vps.h"
 #include "libde265/sps.h"
 #include "libde265/pps.h"
@@ -31,6 +33,8 @@
 #include "libde265/de265.h"
 #include "libde265/threads.h"
 #include "libde265/acceleration.h"
+
+#include "dbg_cabac.h"
 
 #define DE265_MAX_VPS_SETS 16
 #define DE265_MAX_SPS_SETS 16
@@ -279,8 +283,9 @@ typedef struct decoder_context {
 
   struct thread_context thread_context[MAX_THREAD_CONTEXTS];
 
-} decoder_context;
+  struct Debug_cabac dbg_cabac;
 
+} decoder_context;
 
 void init_decoder_context(decoder_context*);
 void set_acceleration_functions(decoder_context* ctx, enum de265_acceleration);

@@ -966,7 +966,8 @@ static void init_context(decoder_context* ctx,
 
 
 static int decode_transform_skip_flag(thread_context* tctx, int cIdx)
-{
+{  
+
   const int context = (cIdx==0) ? 0 : 1;
 
   logtrace(LogSlice,"# transform_skip_flag (context=%d)\n",context);
@@ -1057,6 +1058,9 @@ static int decode_split_cu_flag(thread_context* tctx,
 {
   decoder_context* ctx = tctx->decctx;
 
+  //cabac analyze and debug
+  incCabacDbgSeCnt(ctx, DBG_CSECI_SPLIT_CU_FLAG);
+
   // check if neighbors are available
 
   int availableL = check_CTB_available(ctx,tctx->shdr, x0,y0, x0-1,y0);
@@ -1087,6 +1091,9 @@ static int decode_cu_skip_flag(thread_context* tctx,
 			       int x0, int y0, int ctDepth)
 {
   decoder_context* ctx = tctx->decctx;
+
+  //cabac analyze and debug
+  incCabacDbgSeCnt(ctx, DBG_CSECI_CU_SKIP_FLAG);
 
   // check if neighbors are available
 
@@ -2335,6 +2342,9 @@ int residual_coding(decoder_context* ctx,
       (log2TrafoSize==2))
     {
       tctx->transform_skip_flag[cIdx] = decode_transform_skip_flag(tctx,cIdx);
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt((decoder_context*)tctx->decctx, DBG_CSECI_TRANSFORM_SKIP_FLAG);
     }
   else
     {
@@ -2348,9 +2358,15 @@ int residual_coding(decoder_context* ctx,
     decode_last_significant_coeff_prefix(tctx,log2TrafoSize,cIdx,
                                          &tctx->ctx_model[CONTEXT_MODEL_LAST_SIGNIFICANT_COEFFICIENT_X_PREFIX]);
 
+  //cabac analyze and debug
+  incCabacDbgSeCnt(ctx, DBG_CSECI_LAST_SIG_COEFF_X_PREFIX);
+
   int last_significant_coeff_y_prefix =
     decode_last_significant_coeff_prefix(tctx,log2TrafoSize,cIdx,
                                          &tctx->ctx_model[CONTEXT_MODEL_LAST_SIGNIFICANT_COEFFICIENT_Y_PREFIX]);
+
+  //cabac analyze and debug
+  incCabacDbgSeCnt(ctx, DBG_CSECI_LAST_SIG_COEFF_Y_PREFIX);
 
 
   // TODO: we can combine both FL-bypass calls into one, but the gain may be limited...
@@ -2359,6 +2375,9 @@ int residual_coding(decoder_context* ctx,
   if (last_significant_coeff_x_prefix > 3) {
     int nBits = (last_significant_coeff_x_prefix>>1)-1;
     int last_significant_coeff_x_suffix = decode_CABAC_FL_bypass(&tctx->cabac_decoder,nBits);
+
+    //cabac analyze and debug
+    incCabacDbgSeCnt(ctx, DBG_CSECI_LAST_SIG_COEFF_X_SUFFIX);
 
     LastSignificantCoeffX = (1<<nBits) *
       (2+(last_significant_coeff_x_prefix & 1)) + last_significant_coeff_x_suffix;
@@ -2371,6 +2390,9 @@ int residual_coding(decoder_context* ctx,
   if (last_significant_coeff_y_prefix > 3) {
     int nBits = (last_significant_coeff_y_prefix>>1)-1;
     int last_significant_coeff_y_suffix = decode_CABAC_FL_bypass(&tctx->cabac_decoder,nBits);
+
+    //cabac analyze and debug
+    incCabacDbgSeCnt(ctx, DBG_CSECI_LAST_SIG_COEFF_Y_SUFFIX);
 
     LastSignificantCoeffY = (1<<nBits) *
       (2+(last_significant_coeff_y_prefix & 1)) + last_significant_coeff_y_suffix;
@@ -2496,6 +2518,10 @@ int residual_coding(decoder_context* ctx,
       sub_block_is_coded = decode_coded_sub_block_flag(tctx, cIdx,
                                                        coded_sub_block_neighbors[S.x+S.y*sbWidth]);
       inferSbDcSigCoeffFlag=1;
+
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_CODED_SUB_BLOCK_FLAG);
+
     }
     else if (i==0 || i==lastSubBlock) {
       // first (DC) and last sub-block are always coded
@@ -2555,6 +2581,9 @@ int residual_coding(decoder_context* ctx,
         int significant_coeff = decode_significant_coeff_flag_lookup(tctx,
                                                                      ctxIdxMap[xC+(yC<<log2TrafoSize)]);
                                                                      //ctxIdxMap[(i<<4)+n]);
+
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_SIG_COEFF_FLAG);
 
         if (significant_coeff) {
           coeff_value[nCoefficients] = 1;
@@ -2634,6 +2663,9 @@ int residual_coding(decoder_context* ctx,
                                           &lastInvocation_greater1Ctx,
                                           &lastInvocation_coeff_abs_level_greater1_flag,
                                           &lastInvocation_ctxSet, ctxSet);
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_COEFF_ABS_LEVEL_GREATER1_FLAG);
+
 
         if (greater1_flag) {
           coeff_value[c]++;
@@ -2661,6 +2693,10 @@ int residual_coding(decoder_context* ctx,
 
       if (newLastGreater1ScanPos != -1) {
         int flag = decode_coeff_abs_level_greater2(tctx,cIdx, lastInvocation_ctxSet);
+
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_COEFF_ABS_LEVEL_GREATER2_FLAG);
+
         coeff_value[newLastGreater1ScanPos] += flag;
         coeff_has_max_base_level[newLastGreater1ScanPos] = flag;
       }
@@ -2673,12 +2709,20 @@ int residual_coding(decoder_context* ctx,
 
       for (int n=0;n<nCoefficients-1;n++) {
         coeff_sign[n] = decode_CABAC_bypass(&tctx->cabac_decoder);
+
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_COEFF_SIGN_FLAG);
+
         logtrace(LogSlice,"sign[%d] = %d\n", n, coeff_sign[n]);
       }
 
       // n==nCoefficients-1
       if (!ctx->current_pps->sign_data_hiding_flag || !signHidden) {
         coeff_sign[nCoefficients-1] = decode_CABAC_bypass(&tctx->cabac_decoder);
+
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_COEFF_SIGN_FLAG);
+
         logtrace(LogSlice,"sign[%d] = %d\n", nCoefficients-1, coeff_sign[nCoefficients-1]);
       }
       else {
@@ -2699,6 +2743,9 @@ int residual_coding(decoder_context* ctx,
         if (coeff_has_max_base_level[n]) {
           coeff_abs_level_remaining =
             decode_coeff_abs_level_remaining_HM(tctx, uiGoRiceParam);
+
+          //cabac analyze and debug
+          incCabacDbgSeCnt(ctx, DBG_CSECI_COEFF_ABS_LEVEL_REMAINING);
 
           if (baseLevel + coeff_abs_level_remaining > 3*(1<<uiGoRiceParam)) {
             uiGoRiceParam++;
@@ -2793,9 +2840,15 @@ int read_transform_unit(decoder_context* ctx,
           !tctx->IsCuQpDeltaCoded) {
 
         int cu_qp_delta_abs = decode_cu_qp_delta_abs(tctx);
+
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_CU_QP_DELTA_ABS);
+
         int cu_qp_delta_sign=0;
         if (cu_qp_delta_abs) {
           cu_qp_delta_sign = decode_CABAC_bypass(&tctx->cabac_decoder);
+          //cabac analyze and debug
+          incCabacDbgSeCnt(ctx, DBG_CSECI_CU_QP_DELTA_SIGN_FLAG);
         }
 
         tctx->IsCuQpDeltaCoded = 1;
@@ -3047,17 +3100,25 @@ void read_mvd_coding(thread_context* tctx,
                      int x0,int y0, int refList)
 {
   //slice_segment_header* shdr = tctx->shdr;
+  decoder_context *ctx = (decoder_context*)tctx->decctx;
 
   int abs_mvd_greater0_flag[2];
   abs_mvd_greater0_flag[0] = decode_CABAC_bit(&tctx->cabac_decoder,
                                               &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+0]);
+  //cabac analyze and debug
+  incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_GREATER0_FLAG);
+
   abs_mvd_greater0_flag[1] = decode_CABAC_bit(&tctx->cabac_decoder,
                                               &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+0]);
+  //cabac analyze and debug
+  incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_GREATER0_FLAG);
 
   int abs_mvd_greater1_flag[2];
   if (abs_mvd_greater0_flag[0]) {
     abs_mvd_greater1_flag[0] = decode_CABAC_bit(&tctx->cabac_decoder,
                                                 &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+1]);
+    //cabac analyze and debug
+    incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_GREATER1_FLAG);
   }
   else {
     abs_mvd_greater1_flag[0]=0;
@@ -3066,6 +3127,8 @@ void read_mvd_coding(thread_context* tctx,
   if (abs_mvd_greater0_flag[1]) {
     abs_mvd_greater1_flag[1] = decode_CABAC_bit(&tctx->cabac_decoder,
                                                 &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+1]);
+    //cabac analyze and debug
+    incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_GREATER1_FLAG);
   }
   else {
     abs_mvd_greater1_flag[1]=0;
@@ -3080,12 +3143,16 @@ void read_mvd_coding(thread_context* tctx,
     if (abs_mvd_greater0_flag[c]) {
       if (abs_mvd_greater1_flag[c]) {
         abs_mvd_minus2[c] = decode_CABAC_EGk_bypass(&tctx->cabac_decoder, 1);
+        //cabac analyze and debug
+        incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_MINUS2);
       }
       else {
         abs_mvd_minus2[c] = abs_mvd_greater1_flag[c] -1;
       }
 
       mvd_sign_flag[c] = decode_CABAC_bypass(&tctx->cabac_decoder);
+      //cabac analyze and debug
+      incCabacDbgSeCnt(ctx, DBG_CSECI_MVD_SIGN_FLAG);
 
       value[c] = abs_mvd_minus2[c]+2;
       if (mvd_sign_flag[c]) { value[c] = -value[c]; }

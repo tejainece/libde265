@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.68])
+AC_PREREQ([2.63])
 AC_INIT([libde265], [0.6], [farin@struktur.de])
 AC_CONFIG_SRCDIR([libde265/de265.c])
 AC_CONFIG_HEADERS([config.h])
