@@ -2,6 +2,7 @@
 #include <decctx.h>
 
 char Dbg_cabac_se_name[DBG_CSECI_LENGTH][30] = {
+  "end_of_slice_segment_flag", "end_of_sub_stream_one_bit",
   "split_cu_flag", "cu_transquant_bypass_flag", "cu_skip_flag",
   "pred_mode_flag", "part_mode ", "pcm_flag",
   "prev_intra_luma_pred_flag", "mpm_idx",
@@ -35,6 +36,10 @@ LIBDE265_API void printCabacDebugInfo(decoder_context* ctx) {
 
 LIBDE265_API void incCabacDbgSeCnt(decoder_context* ctx, enum Dbg_cabac_se_idx se_idx) {
     ctx->dbg_cabac.se_cnt[se_idx]++;
+}
+
+LIBDE265_API void incCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx) {
+	ctx->dbg_cabac.se_bin_cnt[se_idx]++;
 }
 
 LIBDE265_API void incCabacDbgDectypCnt(struct decoder_context* ctx, enum Dbg_cabac_dectyp_idx dt_idx) {

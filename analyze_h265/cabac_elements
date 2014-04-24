@@ -1,5 +1,5 @@
-end_of_slice_segment_flag
-end_of_sub_stream_one_bit
+-end_of_slice_segment_flag
+-end_of_sub_stream_one_bit
 sao_merge_left_flag
 sao_merge_up_flag
 sao_type_idx_luma
@@ -81,12 +81,12 @@ SAO_EO_CLASS_CHROMA
 -REF_IDX_L1
 -MVP_L0_FLAG
 -MVP_L1_FLAG
--SPLIT_TRANSFORM_FLAG
--CBF_CB
--CBF_CR
--CBF_LUMA
--ABS_MVD_GREATER0_FLAG
--ABS_MVD_GREATER1_FLAG
++SPLIT_TRANSFORM_FLAG
++CBF_CB
++CBF_CR
++CBF_LUMA
++ABS_MVD_GREATER0_FLAG
++ABS_MVD_GREATER1_FLAG
 -ABS_MVD_MINUS2
 -MVD_SIGN_FLAG
 -CU_QP_DELTA_ABS

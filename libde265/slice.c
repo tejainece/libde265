@@ -1224,7 +1224,7 @@ static int decode_intra_chroma_pred_mode(thread_context* tctx)
 
 
 static int decode_split_transform_flag(thread_context* tctx,
-				       int log2TrafoSize)
+				       int log2TrafoSize, Dbg_cabac_se_idx se_idx)
 {
   logtrace(LogSlice,"# split_transform_flag (log2TrafoSize=%d)\n",log2TrafoSize);
 
@@ -1233,28 +1233,37 @@ static int decode_split_transform_flag(thread_context* tctx,
 
   logtrace(LogSlice,"# context: %d\n",context);
 
-  int bit = decode_CABAC_bit(&tctx->cabac_decoder, &tctx->ctx_model[CONTEXT_MODEL_SPLIT_TRANSFORM_FLAG + context]);
+  int bit = decode_CABAC_bit(tctx->decctx, &tctx->cabac_decoder, &tctx->ctx_model[CONTEXT_MODEL_SPLIT_TRANSFORM_FLAG + context], se_idx);
+
+  //cabac analyze and debug
+  tctx->decctx->dbg_cabac.se_cnt[se_idx]++;
   return bit;
 }
 
 
 static int decode_cbf_chroma(thread_context* tctx,
-			     int trafoDepth)
+			     int trafoDepth, Dbg_cabac_se_idx se_idx)
 {
   logtrace(LogSlice,"# cbf_chroma\n");
 
-  int bit = decode_CABAC_bit(&tctx->cabac_decoder, &tctx->ctx_model[CONTEXT_MODEL_CBF_CHROMA + trafoDepth]);
+  int bit = decode_CABAC_bit(tctx->decctx, &tctx->cabac_decoder, &tctx->ctx_model[CONTEXT_MODEL_CBF_CHROMA + trafoDepth], se_idx);
+
+  //cabac analyze and debug
+  tctx->decctx->dbg_cabac.se_cnt[se_idx]++;
 
   return bit;
 }
 
 
 static int decode_cbf_luma(thread_context* tctx,
-			   int trafoDepth)
+			   int trafoDepth, Dbg_cabac_se_idx se_idx)
 {
   logtrace(LogSlice,"# cbf_luma\n");
 
-  int bit = decode_CABAC_bit(&tctx->cabac_decoder, &tctx->ctx_model[CONTEXT_MODEL_CBF_LUMA + (trafoDepth==0)]);
+  int bit = decode_CABAC_bit(tctx->decctx, &tctx->cabac_decoder, &tctx->ctx_model[CONTEXT_MODEL_CBF_LUMA + (trafoDepth==0)], se_idx);
+
+  //cabac analyze and debug
+  tctx->decctx->dbg_cabac.se_cnt[se_idx]++;
 
   logtrace(LogSlice,"> cbf_luma = %d\n",bit);
 
@@ -2947,10 +2956,7 @@ void read_transform_tree(decoder_context* ctx,
       trafoDepth < MaxTrafoDepth &&
       !(IntraSplitFlag && trafoDepth==0))
     {
-      split_transform_flag = decode_split_transform_flag(tctx, log2TrafoSize);
-
-      //cabac analyze and debug
-      incCabacDbgSeCnt(ctx, DBG_CSECI_SPLIT_TRANSFORM_FLAG);
+      split_transform_flag = decode_split_transform_flag(tctx, log2TrafoSize, DBG_CSECI_SPLIT_TRANSFORM_FLAG);
     }
   else
     {
@@ -2972,18 +2978,12 @@ void read_transform_tree(decoder_context* ctx,
   if (log2TrafoSize>2) {
     // we do not have to test for trafoDepth==0, because parent_cbf_cb is 1 at depth 0
     if (/*trafoDepth==0 ||*/ parent_cbf_cb) {
-      cbf_cb = decode_cbf_chroma(tctx,trafoDepth);
-
-      //cabac analyze and debug
-      incCabacDbgSeCnt(ctx, DBG_CSECI_CBF_CB);
+      cbf_cb = decode_cbf_chroma(tctx, trafoDepth, DBG_CSECI_CBF_CB);
     }
 
     // we do not have to test for trafoDepth==0, because parent_cbf_cb is 1 at depth 0
     if (/*trafoDepth==0 ||*/ parent_cbf_cr) {
-      cbf_cr = decode_cbf_chroma(tctx,trafoDepth);
-
-      //cabac analyze and debug
-      incCabacDbgSeCnt(ctx, DBG_CSECI_CBF_CR);
+      cbf_cr = decode_cbf_chroma(tctx, trafoDepth, DBG_CSECI_CBF_CR);
     }
   }
 
@@ -3025,10 +3025,7 @@ void read_transform_tree(decoder_context* ctx,
     int cbf_luma=1;
 
     if (PredMode==MODE_INTRA || trafoDepth!=0 || cbf_cb || cbf_cr) {
-      cbf_luma = decode_cbf_luma(tctx,trafoDepth);
-
-      //cabac analyze and debug
-      incCabacDbgSeCnt(ctx, DBG_CSECI_CBF_LUMA);
+      cbf_luma = decode_cbf_luma(tctx,trafoDepth, DBG_CSECI_CBF_LUMA);
     }
 
     logtrace(LogSlice,"call read_transform_unit %d/%d\n",x0,y0);
@@ -3115,20 +3112,20 @@ void read_mvd_coding(thread_context* tctx,
   decoder_context *ctx = (decoder_context*)tctx->decctx;
 
   int abs_mvd_greater0_flag[2];
-  abs_mvd_greater0_flag[0] = decode_CABAC_bit(&tctx->cabac_decoder,
-                                              &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+0]);
+  abs_mvd_greater0_flag[0] = decode_CABAC_bit(ctx, &tctx->cabac_decoder,
+                                              &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+0], DBG_CSECI_ABS_MVD_GREATER0_FLAG);
   //cabac analyze and debug
   incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_GREATER0_FLAG);
 
-  abs_mvd_greater0_flag[1] = decode_CABAC_bit(&tctx->cabac_decoder,
-                                              &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+0]);
+  abs_mvd_greater0_flag[1] = decode_CABAC_bit(ctx, &tctx->cabac_decoder,
+                                              &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+0], DBG_CSECI_ABS_MVD_GREATER0_FLAG);
   //cabac analyze and debug
   incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_GREATER0_FLAG);
 
   int abs_mvd_greater1_flag[2];
   if (abs_mvd_greater0_flag[0]) {
-    abs_mvd_greater1_flag[0] = decode_CABAC_bit(&tctx->cabac_decoder,
-                                                &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+1]);
+    abs_mvd_greater1_flag[0] = decode_CABAC_bit(ctx, &tctx->cabac_decoder,
+                                                &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+1], DBG_CSECI_ABS_MVD_GREATER1_FLAG);
     //cabac analyze and debug
     incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_GREATER1_FLAG);
   }
@@ -3137,8 +3134,8 @@ void read_mvd_coding(thread_context* tctx,
   }
 
   if (abs_mvd_greater0_flag[1]) {
-    abs_mvd_greater1_flag[1] = decode_CABAC_bit(&tctx->cabac_decoder,
-                                                &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+1]);
+    abs_mvd_greater1_flag[1] = decode_CABAC_bit(ctx, &tctx->cabac_decoder,
+                                                &tctx->ctx_model[CONTEXT_MODEL_ABS_MVD_GREATER01_FLAG+1], DBG_CSECI_ABS_MVD_GREATER1_FLAG);
     //cabac analyze and debug
     incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_GREATER1_FLAG);
   }
@@ -3154,7 +3151,7 @@ void read_mvd_coding(thread_context* tctx,
   for (int c=0;c<2;c++) {
     if (abs_mvd_greater0_flag[c]) {
       if (abs_mvd_greater1_flag[c]) {
-        abs_mvd_minus2[c] = decode_CABAC_EGk_bypass(&tctx->cabac_decoder, 1);
+        abs_mvd_minus2[c] = decode_CABAC_EGk_bypass(tctx->decctx, &tctx->cabac_decoder, 1, DBG_CSECI_ABS_MVD_MINUS2);
         //cabac analyze and debug
         incCabacDbgSeCnt(ctx, DBG_CSECI_ABS_MVD_MINUS2);
       }

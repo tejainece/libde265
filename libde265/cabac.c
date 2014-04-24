@@ -173,7 +173,11 @@ void init_CABAC_decoder_2(CABAC_decoder* decoder)
 //#include <sys/types.h>
 //#include <signal.h>
 
-int  decode_CABAC_bit(CABAC_decoder* decoder, context_model* model)
+/**
+ * Decodes DecodeDecision as mentioned in Figure 9-6
+ * This decodes the non-equiprobable syntax element bins of the bit stream
+ */
+int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, context_model* model, Dbg_cabac_se_idx se_idx)
 {
   //if (logcnt >= 1100000) { enablelog(); }
 
@@ -184,8 +188,8 @@ int  decode_CABAC_bit(CABAC_decoder* decoder, context_model* model)
   //assert(decoder->range>=0x100);
 
   int decoded_bit;
-  int LPS = LPS_table[model->state][ ( decoder->range >> 6 ) - 4 ];
-  decoder->range -= LPS;
+  int LPS = LPS_table[model->state][ ( decoder->range >> 6 ) - 4 ];	//get the lps range from table 9-40
+  decoder->range -= LPS;	//calculate current range for MPS
 
   uint32_t scaled_range = decoder->range << 7;
 
@@ -200,7 +204,7 @@ int  decode_CABAC_bit(CABAC_decoder* decoder, context_model* model)
       decoded_bit = model->MPSbit;
       model->state = next_state_MPS[model->state];
 
-      if (scaled_range < ( 256 << 7 ) )
+      if (scaled_range < ( 256 << 7 ) )	// renormalize
         {
           // scaled range, highest bit (15) not set
 
@@ -252,13 +256,22 @@ int  decode_CABAC_bit(CABAC_decoder* decoder, context_model* model)
 
   //assert(decoder->range>=0x100);
 
+  //cabac analyze and debug
+  ctx->dbg_cabac.se_bin_cnt[se_idx]++;
+
   return decoded_bit;
 }
 
-int  decode_CABAC_term_bit(CABAC_decoder* decoder)
+/**
+ * Decodes DecodeTerminate as mentioned in Figure 9-9
+ */
+int  decode_CABAC_term_bit(decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac_se_idx se_idx)
 {
   decoder->range -= 2;
   uint32_t scaledRange = decoder->range << 7;
+
+  //cabac analyze and debug
+  ctx->dbg_cabac.se_bin_cnt[se_idx]++;
 
   if (decoder->value >= scaledRange)
     {
@@ -289,8 +302,10 @@ int  decode_CABAC_term_bit(CABAC_decoder* decoder)
 }
 
 
-
-int  decode_CABAC_bypass(CABAC_decoder* decoder)
+/**
+ * Decodes DecodeBypass bit as mentioned in Figure 9-8
+ */
+int  decode_CABAC_bypass(decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac_se_idx se_idx)
 {
   logtrace(LogCABAC,"[%3d] bypass r:%x v:%x\n",logcnt,decoder->range, decoder->value);
 
@@ -326,15 +341,18 @@ int  decode_CABAC_bypass(CABAC_decoder* decoder)
 
   //assert(decoder->range>=0x100);
 
+  //cabac analyze and debug
+  ctx->dbg_cabac.se_bin_cnt[se_idx]++;
+
   return bit;
 }
 
 
-int  decode_CABAC_TU_bypass(CABAC_decoder* decoder, int cMax)
+int  decode_CABAC_TU_bypass(decoder_context *ctx, CABAC_decoder* decoder, int cMax, Dbg_cabac_se_idx se_idx)
 {
   for (int i=0;i<cMax;i++)
     {
-      int bit = decode_CABAC_bypass(decoder);
+      int bit = decode_CABAC_bypass(ctx, decoder, se_idx);
       if (bit==0)
         return i;
     }
@@ -342,11 +360,15 @@ int  decode_CABAC_TU_bypass(CABAC_decoder* decoder, int cMax)
   return cMax;
 }
 
-int  decode_CABAC_TU(CABAC_decoder* decoder, int cMax, context_model* model)
+/**
+ *
+ */
+//not used anywhere
+int  decode_CABAC_TU(decoder_context *ctx, CABAC_decoder* decoder, int cMax, context_model* model, Dbg_cabac_se_idx se_idx)
 {
   for (int i=0;i<cMax;i++)
     {
-      int bit = decode_CABAC_bit(decoder,model);
+      int bit = decode_CABAC_bit(ctx, decoder,model, se_idx);
       if (bit==0)
         return i;
     }
@@ -355,7 +377,7 @@ int  decode_CABAC_TU(CABAC_decoder* decoder, int cMax, context_model* model)
 }
 
 
-int  decode_CABAC_FL_bypass_parallel(CABAC_decoder* decoder, int nBits)
+int  decode_CABAC_FL_bypass_parallel(decoder_context *ctx, CABAC_decoder* decoder, int nBits, Dbg_cabac_se_idx se_idx)
 {
   logtrace(LogCABAC,"[%3d] bypass group r:%x v:%x\n",logcnt,decoder->range, decoder->value);
 
@@ -384,11 +406,14 @@ int  decode_CABAC_FL_bypass_parallel(CABAC_decoder* decoder, int nBits)
 
   //assert(decoder->range>=0x100);
 
+  //cabac analyze and debug
+  ctx->dbg_cabac.se_bin_cnt[se_idx]++;
+
   return value;
 }
 
 
-int  decode_CABAC_FL_bypass(CABAC_decoder* decoder, int nBits)
+int  decode_CABAC_FL_bypass(decoder_context *ctx, CABAC_decoder* decoder, int nBits, Dbg_cabac_se_idx se_idx)
 {
   int value=0;
 
@@ -404,16 +429,16 @@ int  decode_CABAC_FL_bypass(CABAC_decoder* decoder, int nBits)
     }
 #endif
     else {
-      value = decode_CABAC_FL_bypass_parallel(decoder,nBits);
+      value = decode_CABAC_FL_bypass_parallel(ctx, decoder,nBits, se_idx);
     }
   }
   else {
-    value = decode_CABAC_FL_bypass_parallel(decoder,8);
+    value = decode_CABAC_FL_bypass_parallel(ctx, decoder,8, se_idx);
     nBits-=8;
 
     while (nBits--) {
       value <<= 1;
-      value |= decode_CABAC_bypass(decoder);
+      value |= decode_CABAC_bypass(ctx, decoder, se_idx);
     }
   }
 
@@ -422,26 +447,26 @@ int  decode_CABAC_FL_bypass(CABAC_decoder* decoder, int nBits)
   return value;
 }
 
-int  decode_CABAC_TR_bypass(CABAC_decoder* decoder, int cRiceParam, int cTRMax)
+int  decode_CABAC_TR_bypass(decoder_context *ctx, CABAC_decoder* decoder, int cRiceParam, int cTRMax, Dbg_cabac_se_idx se_idx)
 {
-  int prefix = decode_CABAC_TU_bypass(decoder, cTRMax>>cRiceParam);
+  int prefix = decode_CABAC_TU_bypass(ctx, decoder, cTRMax>>cRiceParam, se_idx);
   if (prefix==4) { // TODO check: constant 4 only works for coefficient decoding
     return cTRMax;
   }
 
-  int suffix = decode_CABAC_FL_bypass(decoder, cRiceParam);
+  int suffix = decode_CABAC_FL_bypass(ctx, decoder, cRiceParam, se_idx);
 
   return (prefix << cRiceParam) | suffix;
 }
 
-int  decode_CABAC_EGk_bypass(CABAC_decoder* decoder, int k)
+int  decode_CABAC_EGk_bypass(decoder_context *ctx, CABAC_decoder* decoder, int k, Dbg_cabac_se_idx se_idx)
 {
   int base=0;
   int n=k;
 
   for (;;)
     {
-      int bit = decode_CABAC_bypass(decoder);
+      int bit = decode_CABAC_bypass(ctx, decoder, se_idx);
       if (bit==0)
         break;
       else {
@@ -450,7 +475,6 @@ int  decode_CABAC_EGk_bypass(CABAC_decoder* decoder, int k)
       }
     }
 
-  int suffix = decode_CABAC_FL_bypass(decoder, n);
+  int suffix = decode_CABAC_FL_bypass(ctx, decoder, n, se_idx);
   return base + suffix;
 }
-

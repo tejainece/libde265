@@ -33,3 +33,8 @@ libde265/de265-version.h
 libtool
 ltmain.sh
 missing
+
+.metadata/
+.cproject
+.project
+libde265/Debug

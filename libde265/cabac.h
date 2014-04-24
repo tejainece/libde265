@@ -23,15 +23,16 @@
 
 #include <stdint.h>
 
+struct decoder_context;
 
 typedef struct {
   uint8_t* bitstream_start;
   uint8_t* bitstream_curr;
   uint8_t* bitstream_end;
 
-  uint32_t range;
-  uint32_t value;
-  int16_t  bits_needed;
+  uint32_t range;		//current range
+  uint32_t value;		 //this is the value(from the bit stream) to be decoded
+  int16_t  bits_needed;  //?
 } CABAC_decoder;
 
 
@@ -43,7 +44,7 @@ typedef struct {
 
 void init_CABAC_decoder(CABAC_decoder* decoder, uint8_t* bitstream, int length);
 void init_CABAC_decoder_2(CABAC_decoder* decoder);
-int  decode_CABAC_bit(CABAC_decoder* decoder, context_model* model);
+int  decode_CABAC_bit(struct decoder_context*, CABAC_decoder* decoder, context_model* model, Dbg_cabac_se_idx se_idx);
 int  decode_CABAC_TU(CABAC_decoder* decoder, int cMax, context_model* model);
 int  decode_CABAC_term_bit(CABAC_decoder* decoder);
 
