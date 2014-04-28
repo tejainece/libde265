@@ -6,6 +6,15 @@ struct decoder_context;
 typedef enum Dbg_cabac_se_idx {
   DBG_CSECI_END_OF_SLICE_SEGMENT_FLAG,
   DBG_CSECI_END_OF_SUB_STREAM_ONE_BIT,
+  DBG_CSECI_SAO_MERGE_LEFT_FLAG,
+  DBG_CSECI_SAO_MERGE_UP_FLAG,
+  DBG_CSECI_SAO_TYPE_IDX_LUMA,
+  DBG_CSECI_SAO_TYPE_IDX_CHROMA,
+  DBG_CSECI_SAO_OFFSET_ABS,
+  DBG_CSECI_SAO_OFFSET_SIGN,
+  DBG_CSECI_SAO_BAND_POSITION,
+  DBG_CSECI_SAO_EO_CLASS_LUMA,
+  DBG_CSECI_SAO_EO_CLASS_CHROMA,
   DBG_CSECI_SPLIT_CU_FLAG,
   DBG_CSECI_CU_TRANSQUANT_BYPASS_FLAG,
   DBG_CSECI_CU_SKIP_FLAG,
@@ -63,9 +72,10 @@ typedef struct Debug_cabac {
   uint32_t dectyp_cnt[DBG_CDT_LENGTH];
 } Debug_cabac;
 
-LIBDE265_API void printCabacDebugInfo(struct decoder_context*);
-LIBDE265_API void incCabacDbgSeCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
-LIBDE265_API void incCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
-LIBDE265_API void incCabacDbgDectypCnt(struct decoder_context* ctx, enum Dbg_cabac_dectyp_idx);
+void printCabacDebugInfo(struct decoder_context*);
+void incCabacDbgSeCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
+void incCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
+void incCabacDbgDectypCnt(struct decoder_context* ctx, enum Dbg_cabac_dectyp_idx);
+void addNCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx, int n);
 
 #endif

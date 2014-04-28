@@ -177,13 +177,16 @@ void init_CABAC_decoder_2(CABAC_decoder* decoder)
  * Decodes DecodeDecision as mentioned in Figure 9-6
  * This decodes the non-equiprobable syntax element bins of the bit stream
  */
-int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, context_model* model, Dbg_cabac_se_idx se_idx)
+int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, context_model* model, enum Dbg_cabac_se_idx se_idx)
 {
   //if (logcnt >= 1100000) { enablelog(); }
 
   // if (logcnt==400068770) { raise(SIGINT); }
 
   logtrace(LogCABAC,"[%3d] decodeBin r:%x v:%x state:%d\n",logcnt,decoder->range, decoder->value, model->state);
+
+  //cabac analyze and debug
+  incCabacDbgSeBinCnt(ctx, se_idx);
 
   //assert(decoder->range>=0x100);
 
@@ -256,22 +259,19 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
   //assert(decoder->range>=0x100);
 
-  //cabac analyze and debug
-  ctx->dbg_cabac.se_bin_cnt[se_idx]++;
-
   return decoded_bit;
 }
 
 /**
  * Decodes DecodeTerminate as mentioned in Figure 9-9
  */
-int  decode_CABAC_term_bit(decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac_se_idx se_idx)
+int  decode_CABAC_term_bit(struct decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac_se_idx se_idx)
 {
   decoder->range -= 2;
   uint32_t scaledRange = decoder->range << 7;
 
   //cabac analyze and debug
-  ctx->dbg_cabac.se_bin_cnt[se_idx]++;
+  incCabacDbgSeBinCnt(ctx, se_idx);
 
   if (decoder->value >= scaledRange)
     {
@@ -305,9 +305,11 @@ int  decode_CABAC_term_bit(decoder_context *ctx, CABAC_decoder* decoder, Dbg_cab
 /**
  * Decodes DecodeBypass bit as mentioned in Figure 9-8
  */
-int  decode_CABAC_bypass(decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac_se_idx se_idx)
+int  decode_CABAC_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac_se_idx se_idx)
 {
   logtrace(LogCABAC,"[%3d] bypass r:%x v:%x\n",logcnt,decoder->range, decoder->value);
+  //cabac analyze and debug
+  incCabacDbgSeBinCnt(ctx, se_idx);
 
   //assert(decoder->range>=0x100);
 
@@ -341,14 +343,11 @@ int  decode_CABAC_bypass(decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac
 
   //assert(decoder->range>=0x100);
 
-  //cabac analyze and debug
-  ctx->dbg_cabac.se_bin_cnt[se_idx]++;
-
   return bit;
 }
 
 
-int  decode_CABAC_TU_bypass(decoder_context *ctx, CABAC_decoder* decoder, int cMax, Dbg_cabac_se_idx se_idx)
+int  decode_CABAC_TU_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, int cMax, Dbg_cabac_se_idx se_idx)
 {
   for (int i=0;i<cMax;i++)
     {
@@ -364,7 +363,7 @@ int  decode_CABAC_TU_bypass(decoder_context *ctx, CABAC_decoder* decoder, int cM
  *
  */
 //not used anywhere
-int  decode_CABAC_TU(decoder_context *ctx, CABAC_decoder* decoder, int cMax, context_model* model, Dbg_cabac_se_idx se_idx)
+int  decode_CABAC_TU(struct decoder_context *ctx, CABAC_decoder* decoder, int cMax, context_model* model, Dbg_cabac_se_idx se_idx)
 {
   for (int i=0;i<cMax;i++)
     {
@@ -377,9 +376,11 @@ int  decode_CABAC_TU(decoder_context *ctx, CABAC_decoder* decoder, int cMax, con
 }
 
 
-int  decode_CABAC_FL_bypass_parallel(decoder_context *ctx, CABAC_decoder* decoder, int nBits, Dbg_cabac_se_idx se_idx)
+int  decode_CABAC_FL_bypass_parallel(struct decoder_context *ctx, CABAC_decoder* decoder, int nBits, Dbg_cabac_se_idx se_idx)
 {
   logtrace(LogCABAC,"[%3d] bypass group r:%x v:%x\n",logcnt,decoder->range, decoder->value);
+  //cabac analyze and debug
+  addNCabacDbgSeBinCnt(ctx, se_idx, nBits);
 
   decoder->value <<= nBits;
   decoder->bits_needed+=nBits;
@@ -406,14 +407,11 @@ int  decode_CABAC_FL_bypass_parallel(decoder_context *ctx, CABAC_decoder* decode
 
   //assert(decoder->range>=0x100);
 
-  //cabac analyze and debug
-  ctx->dbg_cabac.se_bin_cnt[se_idx]++;
-
   return value;
 }
 
 
-int  decode_CABAC_FL_bypass(decoder_context *ctx, CABAC_decoder* decoder, int nBits, Dbg_cabac_se_idx se_idx)
+int  decode_CABAC_FL_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, int nBits, Dbg_cabac_se_idx se_idx)
 {
   int value=0;
 
@@ -447,7 +445,7 @@ int  decode_CABAC_FL_bypass(decoder_context *ctx, CABAC_decoder* decoder, int nB
   return value;
 }
 
-int  decode_CABAC_TR_bypass(decoder_context *ctx, CABAC_decoder* decoder, int cRiceParam, int cTRMax, Dbg_cabac_se_idx se_idx)
+int  decode_CABAC_TR_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, int cRiceParam, int cTRMax, Dbg_cabac_se_idx se_idx)
 {
   int prefix = decode_CABAC_TU_bypass(ctx, decoder, cTRMax>>cRiceParam, se_idx);
   if (prefix==4) { // TODO check: constant 4 only works for coefficient decoding
@@ -459,7 +457,7 @@ int  decode_CABAC_TR_bypass(decoder_context *ctx, CABAC_decoder* decoder, int cR
   return (prefix << cRiceParam) | suffix;
 }
 
-int  decode_CABAC_EGk_bypass(decoder_context *ctx, CABAC_decoder* decoder, int k, Dbg_cabac_se_idx se_idx)
+int  decode_CABAC_EGk_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, int k, Dbg_cabac_se_idx se_idx)
 {
   int base=0;
   int n=k;

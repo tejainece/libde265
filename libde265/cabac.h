@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 struct decoder_context;
+#include "dbg_cabac.h"
 
 typedef struct {
   uint8_t* bitstream_start;
@@ -44,14 +45,14 @@ typedef struct {
 
 void init_CABAC_decoder(CABAC_decoder* decoder, uint8_t* bitstream, int length);
 void init_CABAC_decoder_2(CABAC_decoder* decoder);
-int  decode_CABAC_bit(struct decoder_context*, CABAC_decoder* decoder, context_model* model, Dbg_cabac_se_idx se_idx);
-int  decode_CABAC_TU(CABAC_decoder* decoder, int cMax, context_model* model);
-int  decode_CABAC_term_bit(CABAC_decoder* decoder);
+int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, context_model* model, enum Dbg_cabac_se_idx se_idx);
+int  decode_CABAC_TU(struct decoder_context *ctx, CABAC_decoder* decoder, int cMax, context_model* model, Dbg_cabac_se_idx se_idx);
+int  decode_CABAC_term_bit(struct decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac_se_idx se_idx);
 
-int  decode_CABAC_bypass(CABAC_decoder* decoder);
-int  decode_CABAC_TU_bypass(CABAC_decoder* decoder, int cMax);
-int  decode_CABAC_FL_bypass(CABAC_decoder* decoder, int nBits);
-int  decode_CABAC_TR_bypass(CABAC_decoder* decoder, int cRiceParam, int cTRMax);
-int  decode_CABAC_EGk_bypass(CABAC_decoder* decoder, int k);
+int  decode_CABAC_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac_se_idx se_idx);
+int  decode_CABAC_TU_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, int cMax, Dbg_cabac_se_idx se_idx);
+int  decode_CABAC_FL_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, int nBits, Dbg_cabac_se_idx se_idx);
+int  decode_CABAC_TR_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, int cRiceParam, int cTRMax, Dbg_cabac_se_idx se_idx);
+int  decode_CABAC_EGk_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, int k, Dbg_cabac_se_idx se_idx);
 
 #endif

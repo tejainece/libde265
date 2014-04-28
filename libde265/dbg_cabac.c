@@ -3,6 +3,15 @@
 
 char Dbg_cabac_se_name[DBG_CSECI_LENGTH][30] = {
   "end_of_slice_segment_flag", "end_of_sub_stream_one_bit",
+  "sao_merge_left_flag",
+  "sao_merge_up_flag",
+  "sao_type_idx_luma",
+  "sao_type_idx_chroma",
+  "sao_offset_abs",
+  "sao_offset_sign",
+  "sao_band_position",
+  "sao_eo_class_luma",
+  "sao_eo_class_chroma",
   "split_cu_flag", "cu_transquant_bypass_flag", "cu_skip_flag",
   "pred_mode_flag", "part_mode ", "pcm_flag",
   "prev_intra_luma_pred_flag", "mpm_idx",
@@ -27,11 +36,11 @@ char Dbg_cabac_se_name[DBG_CSECI_LENGTH][30] = {
 LIBDE265_API void printCabacDebugInfo(decoder_context* ctx) {
     uint32_t index = 0;
     Debug_cabac cabac_d = ctx->dbg_cabac;
-    printf("\n===============CABAC debug info==============\n");
+    printf("\n===============CABAC se debug info==============\n");
     for(index = 0; index < DBG_CSECI_LENGTH; index++) {
-    	printf("%*s: %d\n", 30, Dbg_cabac_se_name[index], cabac_d.se_cnt[index]);
+    	printf("%*s:\t%d\t%d\n", 30, Dbg_cabac_se_name[index], cabac_d.se_cnt[index], cabac_d.se_bin_cnt[index]);
     }
-    printf("\n=============================================\n");
+    printf("\n================================================\n");
 }
 
 LIBDE265_API void incCabacDbgSeCnt(decoder_context* ctx, enum Dbg_cabac_se_idx se_idx) {
@@ -40,6 +49,10 @@ LIBDE265_API void incCabacDbgSeCnt(decoder_context* ctx, enum Dbg_cabac_se_idx s
 
 LIBDE265_API void incCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx) {
 	ctx->dbg_cabac.se_bin_cnt[se_idx]++;
+}
+
+LIBDE265_API void addNCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx, int n) {
+	ctx->dbg_cabac.se_bin_cnt[se_idx] = ctx->dbg_cabac.se_bin_cnt[se_idx] + n;
 }
 
 LIBDE265_API void incCabacDbgDectypCnt(struct decoder_context* ctx, enum Dbg_cabac_dectyp_idx dt_idx) {
