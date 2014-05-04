@@ -2533,6 +2533,7 @@ int residual_coding(decoder_context* ctx,
 
   int xC,yC;
 
+  //gets the last scan position and last sub-block given the last sig coeff x and last sig coeff y
   scan_position lastScanP = get_scan_position(LastSignificantCoeffX, LastSignificantCoeffY,
                                               scanIdx, log2TrafoSize);
 

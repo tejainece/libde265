@@ -209,6 +209,14 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
       if (scaled_range < ( 256 << 7 ) )	// renormalize
         {
+    	  incCabacDbgSeRenormCnt(ctx, se_idx);
+//Enable to monitor renorm range
+#if 1
+    	  if(decoder->range < 128) {
+    		  printf("========================Renorm error will occur========================================\n");
+    	  }
+    	  //printf("MPS path range before renorm: %d\n", decoder->range);
+#endif
           // scaled range, highest bit (15) not set
 
           decoder->range = scaled_range >> 6; // shift range by one bit
@@ -221,6 +229,13 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
               if (decoder->bitstream_curr != decoder->bitstream_end)
                 { decoder->value |= *decoder->bitstream_curr++; }
             }
+//Enable to monitor renorm range
+#if 1
+          //printf("MPS path range after renorm: %d\n", decoder->range);
+          if(decoder->range < 256) {
+        	  printf("========================Renorm error========================================\n\n\n");
+          }
+#endif
         }
     }
   else
@@ -250,6 +265,7 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
           decoder->bits_needed -= 8;
         }
+      addNCabacDbgSeRenormCnt(ctx, se_idx, num_bits);
     }
 
   logtrace(LogCABAC,"[%3d] -> bit %d  r:%x v:%x\n", logcnt, decoded_bit, decoder->range, decoder->value);
@@ -313,8 +329,15 @@ int  decode_CABAC_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, Db
 
   //assert(decoder->range>=0x100);
 
+//Enable this to analyze working of bypass decoding
+#if 0
+  uint32_t offset_b = decoder->value >> 7;
+  uint32_t range = decoder->range;
+  uint32_t offset_cur = 0;
+
   decoder->value <<= 1;
   decoder->bits_needed++;
+#endif
 
   if (decoder->bits_needed >= 0)
     {
@@ -323,6 +346,11 @@ int  decode_CABAC_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, Db
       decoder->bits_needed = -8;
       decoder->value |= *decoder->bitstream_curr++;
     }
+
+//Enable this to analyze the working of Bypass decoding
+#if 0
+  offset_cur = decoder->value >> 7;
+#endif
 
   int bit;
   uint32_t scaled_range = decoder->range << 7;
@@ -339,6 +367,11 @@ int  decode_CABAC_bypass(struct decoder_context *ctx, CABAC_decoder* decoder, Db
   logtrace(LogCABAC,"[%3d] -> bit %d  r:%x v:%x\n", logcnt, bit, decoder->range, decoder->value);
 #ifdef DE265_LOG_TRACE
   logcnt++;
+#endif
+
+//Enable this to analyze the working of bypass decoding
+#if 0
+  printf("%d\t%d\t%d\t%d\t%d\t%d\n", range, offset_cur % 2, offset_b, offset_cur, decoder->value >> 7, bit);
 #endif
 
   //assert(decoder->range>=0x100);

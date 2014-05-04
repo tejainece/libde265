@@ -37,8 +37,12 @@ LIBDE265_API void printCabacDebugInfo(decoder_context* ctx) {
     uint32_t index = 0;
     Debug_cabac cabac_d = ctx->dbg_cabac;
     printf("\n===============CABAC se debug info==============\n");
+    printf("SE name\tSE Cnt\tSE Bin cnt\tSE renorm cnt\n");
     for(index = 0; index < DBG_CSECI_LENGTH; index++) {
-    	printf("%*s:\t%d\t%d\n", 30, Dbg_cabac_se_name[index], cabac_d.se_cnt[index], cabac_d.se_bin_cnt[index]);
+    	printf("%*s:\t%d\t%d\t%d\n", 30, Dbg_cabac_se_name[index],
+    			cabac_d.se_cnt[index],
+    			cabac_d.se_bin_cnt[index],
+    			cabac_d.se_renorm_cnt[index]);
     }
     printf("\n================================================\n");
 }
@@ -52,7 +56,15 @@ LIBDE265_API void incCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_caba
 }
 
 LIBDE265_API void addNCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx, int n) {
-	ctx->dbg_cabac.se_bin_cnt[se_idx] = ctx->dbg_cabac.se_bin_cnt[se_idx] + n;
+	ctx->dbg_cabac.se_bin_cnt[se_idx] += n;
+}
+
+void incCabacDbgSeRenormCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx) {
+	ctx->dbg_cabac.se_renorm_cnt[se_idx]++;
+}
+
+void addNCabacDbgSeRenormCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx, int n) {
+	ctx->dbg_cabac.se_renorm_cnt[se_idx] += n;
 }
 
 LIBDE265_API void incCabacDbgDectypCnt(struct decoder_context* ctx, enum Dbg_cabac_dectyp_idx dt_idx) {
