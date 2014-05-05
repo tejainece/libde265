@@ -74,7 +74,13 @@ typedef struct Debug_cabac {
   //Keeps count of occurance od differenct type of decoding
   uint32_t dectyp_cnt[DBG_CDT_LENGTH];
   //Keeps count of renormalization during SE
-  uint32_t se_renorm_cnt[DBG_CSECI_LENGTH];
+  uint32_t se_renorm_bits_cnt[DBG_CSECI_LENGTH];
+  //Keeps count of renormalization during SE
+  uint32_t se_wo_renorm_mps_cnt[DBG_CSECI_LENGTH];
+  //Keeps count of renormalization during SE
+  uint32_t se_w_renorm_mps_cnt[DBG_CSECI_LENGTH];
+  //Keeps count of renormalization during SE
+  uint32_t se_lps_cnt[DBG_CSECI_LENGTH];
 } Debug_cabac;
 
 void printCabacDebugInfo(struct decoder_context*);
@@ -82,7 +88,7 @@ void incCabacDbgSeCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx)
 void  incCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
 void addNCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx, int n);
 void incCabacDbgDectypCnt(struct decoder_context* ctx, enum Dbg_cabac_dectyp_idx);
-void  incCabacDbgSeRenormCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
-void addNCabacDbgSeRenormCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx, int n);
+void  incCabacDbgSeRenormBitsCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
+void addNCabacDbgSeRenormBitsCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx, int n);
 
 #endif

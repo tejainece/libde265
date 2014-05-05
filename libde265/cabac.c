@@ -177,6 +177,60 @@ void init_CABAC_decoder_2(CABAC_decoder* decoder)
  * Decodes DecodeDecision as mentioned in Figure 9-6
  * This decodes the non-equiprobable syntax element bins of the bit stream
  */
+/*int  decode_CABAC_bit_parallel_2(struct decoder_context* ctx, CABAC_decoder* decoder, context_model* model, enum Dbg_cabac_se_idx se_idx)
+{
+  int decoded_bit;
+
+  //stage0
+  int LPS_s0 = LPS_table[model->state][ ( decoder->range >> 6 ) - 4 ];	//get the lps range from table 9-40
+  //stage0_mps
+  int range_s0_pmps = decoder->range - LPS_s0;	//calculate current range for MPS
+  //stage0_lps
+  int range_s0_plps = 0; //TODO: fix this
+
+  //stage1_mps <= stage0_mps
+  int LPS_s1_pmps = LPS_table[model->state][ ( range_s0_pmps >> 6 ) - 4 ];
+  int LPS_s1_plps = LPS_table[model->state][ ( range_s0_plps >> 6 ) - 4 ];
+
+  decoder->range = range_s0_pmps;
+
+  uint32_t scaled_range = decoder->range << 7;
+  if (decoder->value < scaled_range) { // MPS path
+      decoded_bit = model->MPSbit;
+      model->state = next_state_MPS[model->state];
+      if (scaled_range < ( 256 << 7 ) )	{ // renormalize
+          // scaled range, highest bit (15) not set
+          decoder->range = scaled_range >> 6; // shift range by one bit
+          decoder->value <<= 1;               // shift value by one bit
+          decoder->bits_needed++;
+          if (decoder->bits_needed == 0) {
+              decoder->bits_needed = -8;
+              if (decoder->bitstream_curr != decoder->bitstream_end) {
+            	  decoder->value |= *decoder->bitstream_curr++; }
+          }
+        }
+    } else { // LPS path
+      int num_bits = renorm_table[ LPS >> 3 ];
+      decoder->value = (decoder->value - scaled_range);
+      decoder->value <<= num_bits;
+      decoder->range   = LPS << num_bits;
+      decoded_bit      = 1 - model->MPSbit;
+      if (model->state==0) { model->MPSbit = 1-model->MPSbit; }
+      model->state = next_state_LPS[model->state];
+      decoder->bits_needed += num_bits;
+      if (decoder->bits_needed >= 0) {
+          if (decoder->bitstream_curr != decoder->bitstream_end)
+            { decoder->value |= (*decoder->bitstream_curr++) << decoder->bits_needed; }
+          decoder->bits_needed -= 8;
+      }
+    }
+  return decoded_bit;
+}*/
+
+/**
+ * Decodes DecodeDecision as mentioned in Figure 9-6
+ * This decodes the non-equiprobable syntax element bins of the bit stream
+ */
 int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, context_model* model, enum Dbg_cabac_se_idx se_idx)
 {
   //if (logcnt >= 1100000) { enablelog(); }
@@ -209,7 +263,8 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
       if (scaled_range < ( 256 << 7 ) )	// renormalize
         {
-    	  incCabacDbgSeRenormCnt(ctx, se_idx);
+    	  incCabacDbgSeRenormBitsCnt(ctx, se_idx);
+    	  incCabacDbgSeWRenormMPSCnt(ctx, se_idx);
 //Enable to monitor renorm range
 #if 1
     	  if(decoder->range < 128) {
@@ -236,6 +291,8 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
         	  printf("========================Renorm error========================================\n\n\n");
           }
 #endif
+        } else {
+        	incCabacDbgSeWORenormMPSCnt(ctx, se_idx);
         }
     }
   else
@@ -265,7 +322,8 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
           decoder->bits_needed -= 8;
         }
-      addNCabacDbgSeRenormCnt(ctx, se_idx, num_bits);
+      addNCabacDbgSeRenormBitsCnt(ctx, se_idx, num_bits);
+      incCabacDbgSeLPSCnt(ctx, se_idx);
     }
 
   logtrace(LogCABAC,"[%3d] -> bit %d  r:%x v:%x\n", logcnt, decoded_bit, decoder->range, decoder->value);

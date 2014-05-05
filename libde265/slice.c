@@ -1789,6 +1789,14 @@ static int decode_significant_coeff_flag(thread_context* tctx,
 #endif
 
 
+/*inline void decode_significant_coeff_flag_lookup_parallel_4(thread_context* tctx,
+                                                 uint8_t *ctxIdxInc, int n, Dbg_cabac_se_idx se_idx)
+{
+
+
+  int bit = decode_CABAC_bit(tctx->decctx, &tctx->cabac_decoder,
+                             &tctx->ctx_model[CONTEXT_MODEL_SIGNIFICANT_COEFF_FLAG + ctxIdxInc], se_idx);
+}*/
 
 static inline int decode_significant_coeff_flag_lookup(thread_context* tctx,
                                                  uint8_t ctxIdxInc, Dbg_cabac_se_idx se_idx)
@@ -2612,10 +2620,15 @@ int residual_coding(decoder_context* ctx,
     int8_t   coeff_has_max_base_level[16];
     int nCoefficients=0;
 
-
+#if 0
+    printf("TrafoSize = %d\nScanIdx = %d\n", 1 << log2TrafoSize, scanIdx);
+#endif
     if (sub_block_is_coded) {
       int x0 = S.x<<2;
       int y0 = S.y<<2;
+#if 0
+      printf("(x0, y0) = (%d, %d)\n", x0, y0);
+#endif
 
       int log2w = log2TrafoSize-2;
       int prevCsbf = coded_sub_block_neighbors[S.x+S.y*sbWidth];
@@ -2632,7 +2645,9 @@ int residual_coding(decoder_context* ctx,
         coeff_scan_pos[nCoefficients] = lastScanPos;
         nCoefficients++;
       }
-
+#if 0
+      printf("Last coeff = %d\n", last_coeff);
+#endif
 
       // --- decode all coefficients' significant_coeff flags except for the DC coefficient ---
 
@@ -2641,6 +2656,9 @@ int residual_coding(decoder_context* ctx,
         int subY = ScanOrderPos[n].y;
         xC = x0 + subX;
         yC = y0 + subY;
+#if 0
+        printf("%d(xC, yC) = (%d, %d). ctxIdx = %d\n", n, xC, yC, xC+(yC<<log2TrafoSize));
+#endif
 
 
         // for all AC coefficients in sub-block, a significant_coeff flag is coded
@@ -2690,6 +2708,9 @@ int residual_coding(decoder_context* ctx,
         }
 
     }
+#if 0
+    printf("\n \n");
+#endif
 
 
     /*
