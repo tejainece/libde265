@@ -2634,12 +2634,41 @@ int residual_coding(decoder_context* ctx,
 
 
       // --- decode all coefficients' significant_coeff flags except for the DC coefficient ---
-
+      static int n_allow = 0;
+      n_allow = last_coeff;
+      printf("SIG_COEFF_FLAG start: last_coeff = %d\n", last_coeff);
       for (int n= last_coeff ; n>0 ; n--) {
+
         int subX = ScanOrderPos[n].x;
         int subY = ScanOrderPos[n].y;
         xC = x0 + subX;
         yC = y0 + subY;
+
+        if(n >= 4 && n_allow == n) {
+        	n_allow = n - 4;
+        	int ctxIdx0 = ctxIdxMap[xC+(yC<<log2TrafoSize)];
+
+			int subX1 = ScanOrderPos[n-1].x;
+			int subY1 = ScanOrderPos[n-1].y;
+			int xC1 = x0 + subX1;
+			int yC1 = y0 + subY1;
+			int ctxIdx1 = ctxIdxMap[xC1+(yC1<<log2TrafoSize)];
+
+			int subX2 = ScanOrderPos[n-1].x;
+			int subY2 = ScanOrderPos[n-1].y;
+			int xC2 = x0 + subX2;
+			int yC2 = y0 + subY2;
+			int ctxIdx2 = ctxIdxMap[xC2+(yC2<<log2TrafoSize)];
+
+			int subX3 = ScanOrderPos[n-1].x;
+			int subY3 = ScanOrderPos[n-1].y;
+			int xC3 = x0 + subX3;
+			int yC3 = y0 + subY3;
+			int ctxIdx3 = ctxIdxMap[xC3+(yC3<<log2TrafoSize)];
+
+			int ctxIdxArray[4] = {ctxIdx0, ctxIdx1, ctxIdx2, ctxIdx3};
+			decode_CABAC_bit_2_parallel(ctx,tctx, ctxIdxArray);
+        }
 
 
         // for all AC coefficients in sub-block, a significant_coeff flag is coded

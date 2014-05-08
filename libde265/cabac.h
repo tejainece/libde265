@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 struct decoder_context;
+struct thread_context;
 #include "dbg_cabac.h"
 
 typedef struct {
@@ -45,6 +46,7 @@ typedef struct {
 
 void init_CABAC_decoder(CABAC_decoder* decoder, uint8_t* bitstream, int length);
 void init_CABAC_decoder_2(CABAC_decoder* decoder);
+int  decode_CABAC_bit_2_parallel(struct decoder_context* ctx, struct thread_context* tctx, int ctxId[4]);
 int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, context_model* model, enum Dbg_cabac_se_idx se_idx);
 int  decode_CABAC_TU(struct decoder_context *ctx, CABAC_decoder* decoder, int cMax, context_model* model, Dbg_cabac_se_idx se_idx);
 int  decode_CABAC_term_bit(struct decoder_context *ctx, CABAC_decoder* decoder, Dbg_cabac_se_idx se_idx);

@@ -70,6 +70,10 @@ typedef struct Debug_cabac {
   uint32_t se_cnt[DBG_CSECI_LENGTH];
   uint32_t se_bin_cnt[DBG_CSECI_LENGTH];
   uint32_t dectyp_cnt[DBG_CDT_LENGTH];
+
+  uint32_t se_mps_wo_renorm_cnt[DBG_CSECI_LENGTH];
+  uint32_t se_mps_w_renorm_cnt[DBG_CSECI_LENGTH];
+  uint32_t se_lps_cnt[DBG_CSECI_LENGTH];
 } Debug_cabac;
 
 void printCabacDebugInfo(struct decoder_context*);
@@ -77,5 +81,9 @@ void incCabacDbgSeCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx)
 void incCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
 void incCabacDbgDectypCnt(struct decoder_context* ctx, enum Dbg_cabac_dectyp_idx);
 void addNCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx, int n);
+
+void incCabacDbgSeMPSWoRenormCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
+void incCabacDbgSeMPSWRenormCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
+void incCabacDbgSeLPSCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx);
 
 #endif

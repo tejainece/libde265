@@ -38,7 +38,12 @@ LIBDE265_API void printCabacDebugInfo(decoder_context* ctx) {
     Debug_cabac cabac_d = ctx->dbg_cabac;
     printf("\n===============CABAC se debug info==============\n");
     for(index = 0; index < DBG_CSECI_LENGTH; index++) {
-    	printf("%*s:\t%d\t%d\n", 30, Dbg_cabac_se_name[index], cabac_d.se_cnt[index], cabac_d.se_bin_cnt[index]);
+    	printf("%*s:\t%d\t%d\t%d\t%d\t%d\n", 30, Dbg_cabac_se_name[index],
+    			cabac_d.se_cnt[index],
+    			cabac_d.se_bin_cnt[index],
+    			cabac_d.se_mps_wo_renorm_cnt[index],
+    			cabac_d.se_mps_w_renorm_cnt[index],
+    			cabac_d.se_lps_cnt[index]);
     }
     printf("\n================================================\n");
 }
@@ -57,4 +62,16 @@ LIBDE265_API void addNCabacDbgSeBinCnt(struct decoder_context* ctx, enum Dbg_cab
 
 LIBDE265_API void incCabacDbgDectypCnt(struct decoder_context* ctx, enum Dbg_cabac_dectyp_idx dt_idx) {
     ctx->dbg_cabac.dectyp_cnt[dt_idx]++;
+}
+
+LIBDE265_API void incCabacDbgSeMPSWoRenormCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx) {
+	ctx->dbg_cabac.se_mps_wo_renorm_cnt[se_idx]++;
+}
+
+LIBDE265_API void incCabacDbgSeMPSWRenormCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx) {
+	ctx->dbg_cabac.se_mps_w_renorm_cnt[se_idx]++;
+}
+
+LIBDE265_API void incCabacDbgSeLPSCnt(struct decoder_context* ctx, enum Dbg_cabac_se_idx se_idx) {
+	ctx->dbg_cabac.se_lps_cnt[se_idx]++;
 }

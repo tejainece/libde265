@@ -19,6 +19,7 @@
  */
 
 #include "cabac.h"
+#include "decctx.h"
 #include "util.h"
 
 #include <stdint.h>
@@ -173,6 +174,121 @@ void init_CABAC_decoder_2(CABAC_decoder* decoder)
 //#include <sys/types.h>
 //#include <signal.h>
 
+int  decode_CABAC_bit_2_parallel(struct decoder_context* ctx,
+        struct thread_context* tctx, int ctxId[4]) {
+
+	CABAC_decoder *decoder = &tctx->cabac_decoder;
+
+	uint32_t start_range = decoder->range;
+	uint32_t start_offset = decoder->value >> 7;
+	uint16_t stream_bits = decoder->value & 0xFF;
+	uint8_t start_state = tctx->ctx_model[CONTEXT_MODEL_SIGNIFICANT_COEFF_FLAG + ctxId[0]].state;
+	printf("\n\nParallelization results:\n");
+	printf("Starting range: %d. Starting offset = %d\n", start_range, start_offset);
+
+	//stage0
+	uint32_t lps_range_0 = LPS_table[start_state][ ( start_range >> 6 ) & 3 ];
+	uint32_t mps_range_0 = start_range - lps_range_0;
+	//range
+	uint32_t mps_range_0_out = mps_range_0;
+	uint32_t mps_renorm_range_0_out = mps_range_0 << 1;
+
+	//offset
+	uint32_t mps_offset_0_out = start_offset;
+	printf("%d %d %d\n", stream_bits, (stream_bits & 0x80) >> 7, decoder->bits_needed);
+	uint32_t mps_renorm_offset_0_out = (start_offset << 1) | ((stream_bits & 0x80) >> 7);
+	//TODO: update stream bits
+	//TODO: decoded bit
+	//state
+	uint8_t mps_state_0_out = next_state_MPS[start_state];
+	uint8_t mps_renorm_state_0_out = next_state_MPS[start_state];
+
+	printf("Stage0:\n");
+	printf("state: %d\n", start_state);
+	printf("MPS wo renorm: \n");
+	printf("Range: %d\n", mps_range_0_out);
+	printf("Offset: %d\n", mps_offset_0_out);
+
+	printf("MPS w renorm: \n");
+	printf("Range: %d\n", mps_renorm_range_0_out);
+	printf("Offset: %d\n", mps_renorm_offset_0_out);
+
+	//stage1 previous mps wo renorm
+	start_range = mps_range_0_out;
+	start_offset = mps_offset_0_out;
+	if(ctxId[0] == ctxId[1]) {
+		start_state = mps_state_0_out;
+	} else {
+		start_state = tctx->ctx_model[CONTEXT_MODEL_SIGNIFICANT_COEFF_FLAG + ctxId[1]].state;
+	}
+	//pre calc
+	uint32_t lps_range_1 = LPS_table[start_state][ ( start_range >> 6 ) & 3 ];
+	uint32_t mps_range_1 = start_range - lps_range_1;
+	//range
+	uint32_t mps_range_1_out = mps_range_1;
+	uint32_t mps_renorm_range_1_out = mps_range_1 << 1;
+
+	//offset
+	uint32_t mps_offset_1_out = start_offset;
+	uint32_t mps_renorm_offset_1_out = (start_offset << 1) | ((stream_bits & 0x80) >> 7);
+	//TODO: update stream bits
+	//TODO: decoded bit
+	//state
+	uint8_t mps_state_1_out = next_state_MPS[start_state];
+	uint8_t mps_renorm_state_1_out = next_state_MPS[start_state];
+
+	printf("\nStage1:\n");
+	printf("state: %d\n", start_state);
+	printf("MPS wo renorm: \n");
+	printf("Range: %d\n", mps_range_1_out);
+	printf("Offset: %d\n", mps_offset_1_out);
+
+	printf("MPS w renorm: \n");
+	printf("Range: %d\n", mps_renorm_range_1_out);
+	printf("Offset: %d\n", mps_renorm_offset_1_out);
+	printf("=============================\n");
+
+
+	//stage2 previous mps wo renorm
+	start_range = mps_range_1_out;
+	start_offset = mps_offset_1_out;
+	if(ctxId[1] == ctxId[2]) { //priority if
+		start_state = mps_state_1_out;
+	} else if(ctxId[0] == ctxId[2]) { //priority if
+		start_state = mps_state_0_out;
+	} else {
+		start_state = tctx->ctx_model[CONTEXT_MODEL_SIGNIFICANT_COEFF_FLAG + ctxId[2]].state;
+	}
+	//pre calc
+	uint32_t lps_range_2 = LPS_table[start_state][ ( start_range >> 6 ) & 3 ];
+	uint32_t mps_range_2 = start_range - lps_range_2;
+	//range
+	uint32_t mps_range_2_out = mps_range_2;
+	uint32_t mps_renorm_range_2_out = mps_range_2 << 1;
+
+	//offset
+	uint32_t mps_offset_2_out = start_offset;
+	uint32_t mps_renorm_offset_2_out = (start_offset << 1) | ((stream_bits & 0x80) >> 7);
+	//TODO: update stream bits
+	//TODO: decoded bit
+	//state
+	uint8_t mps_state_2_out = next_state_MPS[start_state];
+	uint8_t mps_renorm_state_2_out = next_state_MPS[start_state];
+
+	printf("\nStage2:\n");
+	printf("state: %d\n", start_state);
+	printf("MPS wo renorm: \n");
+	printf("Range: %d\n", mps_range_2_out);
+	printf("Offset: %d\n", mps_offset_2_out);
+
+	printf("MPS w renorm: \n");
+	printf("Range: %d\n", mps_renorm_range_2_out);
+	printf("Offset: %d\n", mps_renorm_offset_2_out);
+	printf("=============================\n");
+
+	return 0;
+}
+
 /**
  * Decodes DecodeDecision as mentioned in Figure 9-6
  * This decodes the non-equiprobable syntax element bins of the bit stream
@@ -187,6 +303,12 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
   //cabac analyze and debug
   incCabacDbgSeBinCnt(ctx, se_idx);
+
+  if(se_idx == DBG_CSECI_SIG_COEFF_FLAG) {
+	  printf("\n\nNon parallelization result:\n");
+	  printf("start range: %d\n", decoder->range);
+	  printf("state: %d\n", model->state);
+  }
 
   //assert(decoder->range>=0x100);
 
@@ -209,11 +331,16 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
       if (scaled_range < ( 256 << 7 ) )	// renormalize
         {
+    	  incCabacDbgSeMPSWRenormCnt(ctx, se_idx);
           // scaled range, highest bit (15) not set
 
           decoder->range = scaled_range >> 6; // shift range by one bit
           decoder->value <<= 1;               // shift value by one bit
           decoder->bits_needed++;
+
+          if(se_idx == DBG_CSECI_SIG_COEFF_FLAG) {
+          	printf("MPS w Renorm:\n");
+          }
 
           if (decoder->bits_needed == 0)
             {
@@ -221,6 +348,11 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
               if (decoder->bitstream_curr != decoder->bitstream_end)
                 { decoder->value |= *decoder->bitstream_curr++; }
             }
+        } else {
+        	incCabacDbgSeMPSWoRenormCnt(ctx, se_idx);
+        	if(se_idx == DBG_CSECI_SIG_COEFF_FLAG) {
+        		printf("MPS wo Renorm:\n");
+        	}
         }
     }
   else
@@ -250,7 +382,14 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
           decoder->bits_needed -= 8;
         }
+      incCabacDbgSeLPSCnt(ctx, se_idx);
     }
+
+  if(se_idx == DBG_CSECI_SIG_COEFF_FLAG) {
+	  printf("Range: %d\n", decoder->range);
+	  printf("Offset: %d\n", decoder->value >> 7);
+	  printf("=============================\n");
+  }
 
   logtrace(LogCABAC,"[%3d] -> bit %d  r:%x v:%x\n", logcnt, decoded_bit, decoder->range, decoder->value);
 #ifdef DE265_LOG_TRACE
