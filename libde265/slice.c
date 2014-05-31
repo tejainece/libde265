@@ -1799,6 +1799,7 @@ static inline int decode_significant_coeff_flag_lookup(thread_context* tctx,
   //cabac analyze and debug
   incCabacDbgSeCnt(tctx->decctx, se_idx);
 
+  printf("CtxIdx = %d\n", ctxIdxInc);
   int bit = decode_CABAC_bit(tctx->decctx, &tctx->cabac_decoder,
                              &tctx->ctx_model[CONTEXT_MODEL_SIGNIFICANT_COEFF_FLAG + ctxIdxInc], se_idx);
   return bit;
@@ -2644,8 +2645,8 @@ int residual_coding(decoder_context* ctx,
         xC = x0 + subX;
         yC = y0 + subY;
 
-        if(n >= 4 && n_allow == n) {
-        	n_allow = n - 4;
+        /*if(n >= 2 && n_allow == n) {
+        	n_allow = n - 3;
         	int ctxIdx0 = ctxIdxMap[xC+(yC<<log2TrafoSize)];
 
 			int subX1 = ScanOrderPos[n-1].x;
@@ -2668,7 +2669,7 @@ int residual_coding(decoder_context* ctx,
 
 			int ctxIdxArray[4] = {ctxIdx0, ctxIdx1, ctxIdx2, ctxIdx3};
 			decode_CABAC_bit_2_parallel(ctx,tctx, ctxIdxArray);
-        }
+        }*/
 
 
         // for all AC coefficients in sub-block, a significant_coeff flag is coded

@@ -183,8 +183,12 @@ int  decode_CABAC_bit_2_parallel(struct decoder_context* ctx,
 	uint32_t start_offset = decoder->value >> 7;
 	uint16_t stream_bits = decoder->value & 0xFF;
 	uint8_t start_state = tctx->ctx_model[CONTEXT_MODEL_SIGNIFICANT_COEFF_FLAG + ctxId[0]].state;
-	printf("\n\nParallelization results:\n");
+	printf("\n\nParallelization Info:\n");
 	printf("Starting range: %d. Starting offset = %d\n", start_range, start_offset);
+	for(int i = 0; i < 3; i++) {
+		printf("index %d = %d. ", i, ctxId[i]);
+	}
+	printf("\n");
 
 	//stage0
 	uint32_t lps_range_0 = LPS_table[start_state][ ( start_range >> 6 ) & 3 ];
@@ -298,6 +302,7 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
   //if (logcnt >= 1100000) { enablelog(); }
 
   // if (logcnt==400068770) { raise(SIGINT); }
+  uint32_t start_offset = decoder->value >> 7;
 
   logtrace(LogCABAC,"[%3d] decodeBin r:%x v:%x state:%d\n",logcnt,decoder->range, decoder->value, model->state);
 
@@ -305,9 +310,21 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
   incCabacDbgSeBinCnt(ctx, se_idx);
 
   if(se_idx == DBG_CSECI_SIG_COEFF_FLAG) {
+	  printf("value=%x\n", decoder->value);
+	  printf("Bits needed = %d\n", decoder->bits_needed);
+
+	  uint8_t num_valid_bits = -(decoder->bits_needed + 1);
+
+	  uint8_t byte0 = ((decoder->value & 0x7f) << 1) | (decoder->bitstream_curr[0] >> num_valid_bits);
+	  uint8_t byte1 = ((decoder->bitstream_curr[1]) << (8 - num_valid_bits)) | (decoder->bitstream_curr[2] >> num_valid_bits);
+	  uint8_t byte2 = ((decoder->bitstream_curr[2]) << (8 - num_valid_bits)) | (decoder->bitstream_curr[3] >> num_valid_bits);
+	  uint8_t byte3 = ((decoder->bitstream_curr[3]) << (8 - num_valid_bits)) | (decoder->bitstream_curr[4] >> num_valid_bits);
+
 	  printf("\n\nNon parallelization result:\n");
 	  printf("start range: %d\n", decoder->range);
-	  printf("state: %d\n", model->state);
+	  printf("start offset: %d\n", start_offset);
+	  printf("state: %d\n", (model->MPSbit << 6) | model->state);
+	  printf("din: %d %d %d %d\n", byte0, byte1, byte2, byte3);
   }
 
   //assert(decoder->range>=0x100);
@@ -336,7 +353,9 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
           decoder->range = scaled_range >> 6; // shift range by one bit
           decoder->value <<= 1;               // shift value by one bit
+          //printf("++++++++++Bits needed = %d\n", decoder->bits_needed);
           decoder->bits_needed++;
+          //printf("__________Bits needed = %d\n", decoder->bits_needed);
 
           if(se_idx == DBG_CSECI_SIG_COEFF_FLAG) {
           	printf("MPS w Renorm:\n");
@@ -348,6 +367,7 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
               if (decoder->bitstream_curr != decoder->bitstream_end)
                 { decoder->value |= *decoder->bitstream_curr++; }
             }
+          //printf("============Bits needed = %d\n", decoder->bits_needed);
         } else {
         	incCabacDbgSeMPSWoRenormCnt(ctx, se_idx);
         	if(se_idx == DBG_CSECI_SIG_COEFF_FLAG) {
@@ -367,12 +387,18 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
       decoder->value <<= num_bits;
       decoder->range   = LPS << num_bits;  /* this is always >= 0x100 except for state 63,
                                               but state 63 is never used */
+      if(se_idx == DBG_CSECI_SIG_COEFF_FLAG) {
+    	  printf("LPS. Renorm bits: %d\n", num_bits);
+      }
+
       decoded_bit      = 1 - model->MPSbit;
 
       if (model->state==0) { model->MPSbit = 1-model->MPSbit; }
       model->state = next_state_LPS[model->state];
 
+      //printf("´´´´´´´´´´Bits needed = %d\n", decoder->bits_needed);
       decoder->bits_needed += num_bits;
+      //printf("__________Bits needed = %d\n", decoder->bits_needed);
 
       if (decoder->bits_needed >= 0)
         {
@@ -382,12 +408,15 @@ int  decode_CABAC_bit(struct decoder_context* ctx, CABAC_decoder* decoder, conte
 
           decoder->bits_needed -= 8;
         }
+      //printf("============Bits needed = %d\n", decoder->bits_needed);
       incCabacDbgSeLPSCnt(ctx, se_idx);
     }
 
   if(se_idx == DBG_CSECI_SIG_COEFF_FLAG) {
 	  printf("Range: %d\n", decoder->range);
 	  printf("Offset: %d\n", decoder->value >> 7);
+	  printf("state: %d\n", (model->MPSbit << 6) | model->state);
+	  printf("bin val: %d\n", decoded_bit);
 	  printf("=============================\n");
   }
 
