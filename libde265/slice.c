@@ -2573,9 +2573,38 @@ int residual_coding(decoder_context* ctx,
   // i - subblock index
   // n - coefficient index in subblock
 
+  /**********************************
+   **************************TODO: print xP_lc, yP_lc
+   ********************/
+  printf("**********************New res block**************************\n");
+  printf("scan_idx = %d\n", scanIdx);
+  printf("cIdx = %d\n", cIdx);
+  printf("l2_resblk_size = %d\n", log2TrafoSize);
+
+  uint8_t xP_lc = 0;
+  uint8_t yP_lc = 0;
+  if(scanIdx == 2) {
+    xP_lc = LastSignificantCoeffY & 3;
+    yP_lc = LastSignificantCoeffX & 3;
+  } else {
+	xP_lc = LastSignificantCoeffX & 3;
+	yP_lc = LastSignificantCoeffY & 3;
+  }
+  printf("xP_lc, yP_lc = %d,%d\n", xP_lc, yP_lc);
+
   for (int i=lastSubBlock;i>=0;i--) {
     position S = ScanOrderSub[i];
     int inferSbDcSigCoeffFlag=0;
+
+    printf("xS, yS = %d, %d\n", S.x, S.y);
+    printf("csbf_en_i = %d\n", (i < 2)? 0: 1);
+    if(i > 0) {
+    	position sn = ScanOrderSub[i - 1];
+    	printf("xS_nxt, yS_nxt = %d, %d\n", sn.x, sn.y);
+    } else {
+    	printf("xS_nxt, yS_nxt = %d, %d\n", 0, 0);
+    }
+    //if()
 
     logtrace(LogSlice,"sub block scan idx: %d\n",i);
 
@@ -2633,7 +2662,9 @@ int residual_coding(decoder_context* ctx,
         nCoefficients++;
       }
 
-
+      /***********************************************************************
+       *******************SCF decode****************************************
+       ***********************************************************************/
       // --- decode all coefficients' significant_coeff flags except for the DC coefficient ---
       static int n_allow = 0;
       n_allow = last_coeff;
